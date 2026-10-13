@@ -38,27 +38,18 @@
   header h1 { font-size: 1.8rem; color: #fff; letter-spacing: -0.02em; }
   header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
 
-  .config {
+  .banner {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     margin-bottom: 1.5rem;
-    font-size: 0.85rem;
-  }
-  .config label { display: block; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; }
-  .config input {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 0.5rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
     font-family: var(--font-mono);
-    font-size: 0.85rem;
+    word-break: break-all;
   }
-  .config input:focus { outline: none; border-color: var(--accent); }
-  .config .hint { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.8rem; }
+  .banner strong { color: var(--text); }
 
   .tabs {
     display: flex;
@@ -247,7 +238,9 @@
     height: 6px;
     overflow: hidden;
     margin-top: 0.5rem;
+    display: none;
   }
+  .progress.show { display: block; }
   .progress-fill {
     height: 100%;
     background: var(--accent);
@@ -260,7 +253,9 @@
     margin-top: 1rem;
     border: 1px solid var(--border);
     border-radius: 8px;
+    display: none;
   }
+  .table-wrap.show { display: block; }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -284,12 +279,13 @@
   tr:hover td { background: rgba(88, 166, 255, 0.04); }
 
   .summary {
-    display: flex;
+    display: none;
     gap: 1rem;
     flex-wrap: wrap;
     margin-top: 1rem;
     font-size: 0.85rem;
   }
+  .summary.show { display: flex; }
   .summary .stat {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -318,10 +314,8 @@
     <p>Score applicants using Jev's calibrated decision model.</p>
   </header>
 
-  <div class="config">
-    <label for="workerUrl">Cloudflare Worker URL</label>
-    <input id="workerUrl" type="text" placeholder="https://jev-proxy.your-subdomain.workers.dev" />
-    <p class="hint">This page calls Jev through your Worker. The API key never leaves the Worker.</p>
+  <div class="banner">
+    <strong>Endpoint:</strong> script.google.com/macros/s/AKfycby6hqDQvC66mfurmhLWreAs512vVPoP1mc6q1IjSODOBMfuC9snCUE6b6YmzsMM9p49/exec
   </div>
 
   <div class="tabs">
@@ -418,7 +412,7 @@
     <div id="dropZone" class="drop-zone">
       <input id="fileInput" type="file" accept=".csv,text/csv" />
       <p><strong>Click to upload</strong> or drag a CSV file here</p>
-      <p style="font-size:0.8rem;margin-top:0.5rem;">Header row must match the state keys (applicant_id, core_gpa_bucket, …)</p>
+      <p style="font-size:0.8rem;margin-top:0.5rem;">Header row should match the state keys (applicant_id, core_gpa_bucket, …)</p>
     </div>
 
     <div id="fileInfo" class="file-info"></div>
@@ -430,11 +424,11 @@
     </div>
 
     <div id="batch-status" class="status"></div>
-    <div id="progressWrap" class="progress" style="display:none;"><div id="progressFill" class="progress-fill"></div></div>
+    <div id="progressWrap" class="progress"><div id="progressFill" class="progress-fill"></div></div>
 
-    <div id="summary" class="summary" style="display:none;"></div>
+    <div id="summary" class="summary"></div>
 
-    <div id="tableWrap" class="table-wrap" style="display:none;">
+    <div id="tableWrap" class="table-wrap">
       <table id="resultsTable">
         <thead></thead>
         <tbody></tbody>
@@ -443,14 +437,15 @@
   </div>
 
   <footer>
-    <p>Powered by <a href="https://typesafe.ai" target="_blank" rel="noopener">Jev</a> via a Cloudflare Worker proxy.</p>
+    <p>Powered by <a href="https://typesafe.ai" target="_blank" rel="noopener">Jev</a> via Google Apps Script.</p>
   </footer>
 
 </div>
 
 <script>
   // -------------------- CONFIG --------------------
-  const WORKER_URL_KEY = 'jev_worker_url';
+  const APPS_SCRIPT_URL =
+    "https://script.google.com/macros/s/AKfycby6hqDQvC66mfurmhLWreAs512vVPoP1mc6q1IjSODOBMfuC9snCUE6b6YmzsMM9p49/exec";
 
   // -------------------- TABS --------------------
   document.querySelectorAll('.tab').forEach((tab) => {
@@ -462,21 +457,7 @@
     });
   });
 
-  // -------------------- WORKER URL --------------------
-  const workerUrlInput = document.getElementById('workerUrl');
-  const savedUrl = localStorage.getItem(WORKER_URL_KEY);
-  if (savedUrl) workerUrlInput.value = savedUrl;
-  workerUrlInput.addEventListener('change', () => {
-    localStorage.setItem(WORKER_URL_KEY, workerUrlInput.value.trim());
-  });
-
-  function getWorkerUrl() {
-    const url = workerUrlInput.value.trim();
-    if (!url) throw new Error('Enter your Cloudflare Worker URL above.');
-    return url;
-  }
-
-  // -------------------- SHARED --------------------
+  // -------------------- HELPERS --------------------
   function buildQuestions() {
     return {
       should_admit: {
@@ -519,20 +500,23 @@
   }
 
   async function callJev(state) {
-    const response = await fetch(getWorkerUrl(), {
+    const response = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // text/plain avoids CORS preflight against Apps Script
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        model: 'jev-1.13',
         state: state,
         questions: buildQuestions(),
       }),
+      redirect: 'follow',
     });
     if (!response.ok) {
       const text = await response.text();
-      throw new Error('Worker returned ' + response.status + ': ' + text);
+      throw new Error('Apps Script returned ' + response.status + ': ' + text);
     }
-    return response.json();
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    return data;
   }
 
   function showStatus(el, message, kind) {
@@ -636,9 +620,9 @@
   const tableWrap = document.getElementById('tableWrap');
   const resultsTable = document.getElementById('resultsTable');
 
-  let parsedRows = [];       // Array of objects keyed by header
-  let parsedHeaders = [];    // Original headers in order
-  let scoredResults = [];    // Array of objects with original + jev columns
+  let parsedRows = [];
+  let parsedHeaders = [];
+  let scoredResults = [];
 
   dropZone.addEventListener('click', () => fileInput.click());
   dropZone.addEventListener('dragover', (e) => {
@@ -672,8 +656,8 @@
         runBatchBtn.disabled = rows.length === 0;
         downloadBtn.disabled = true;
         hideStatus(batchStatus);
-        summaryEl.style.display = 'none';
-        tableWrap.style.display = 'none';
+        summaryEl.classList.remove('show');
+        tableWrap.classList.remove('show');
       } catch (err) {
         showStatus(batchStatus, 'Could not parse CSV: ' + err.message, 'error');
       }
@@ -681,7 +665,6 @@
     reader.readAsText(file);
   }
 
-  // Minimal RFC-4180-ish CSV parser (handles quoted fields and escaped quotes)
   function parseCSV(text) {
     const rows = [];
     let cur = '';
@@ -707,7 +690,6 @@
         cur += ch; i++; continue;
       }
     }
-    // flush last field/row
     if (cur.length > 0 || row.length > 0) { pushField(); pushRow(); }
 
     if (rows.length === 0) throw new Error('Empty file');
@@ -721,8 +703,6 @@
     return { headers, rows: objects };
   }
 
-  // Nest dotted keys like academic_profile.core_gpa_bucket into a nested object.
-  // Plain headers become top-level keys.
   function rowToState(row) {
     const state = {};
     Object.keys(row).forEach((key) => {
@@ -744,7 +724,7 @@
     downloadBtn.disabled = true;
     hideStatus(batchStatus);
     showStatus(batchStatus, 'Scoring ' + parsedRows.length + ' applicant(s)…', 'loading');
-    progressWrap.style.display = 'block';
+    progressWrap.classList.add('show');
     progressFill.style.width = '0%';
 
     const results = [];
@@ -796,7 +776,7 @@
       '<div class="stat"><span class="num">' + autoDeny + '</span><span class="lbl">auto-deny</span></div>' +
       '<div class="stat"><span class="num">' + human + '</span><span class="lbl">human review</span></div>' +
       '<div class="stat"><span class="num">' + errors + '</span><span class="lbl">errors</span></div>';
-    summaryEl.style.display = 'flex';
+    summaryEl.classList.add('show');
   }
 
   function renderBatchTable(results) {
@@ -822,16 +802,17 @@
         const td = document.createElement('td');
         let v = r[c];
         if (typeof v === 'number') v = v.toFixed(2);
-        td.textContent = v ?? '';
         if (c === 'jev_routing') {
           const cls = String(v).toLowerCase().replace('_', '-');
           td.innerHTML = '<span class="routing ' + cls + '">' + v + '</span>';
+        } else {
+          td.textContent = v ?? '';
         }
         rowEl.appendChild(td);
       });
       tbody.appendChild(rowEl);
     });
-    tableWrap.style.display = 'block';
+    tableWrap.classList.add('show');
   }
 
   function toCSV(results) {
@@ -876,10 +857,10 @@
     runBatchBtn.disabled = true;
     downloadBtn.disabled = true;
     hideStatus(batchStatus);
-    progressWrap.style.display = 'none';
+    progressWrap.classList.remove('show');
     progressFill.style.width = '0%';
-    summaryEl.style.display = 'none';
-    tableWrap.style.display = 'none';
+    summaryEl.classList.remove('show');
+    tableWrap.classList.remove('show');
   });
 
   runBatchBtn.addEventListener('click', runBatch);
