@@ -38,18 +38,44 @@
   header h1 { font-size: 1.8rem; color: #fff; letter-spacing: -0.02em; }
   header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
 
-  .banner {
+  .threshold-config {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
     margin-bottom: 1.5rem;
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    word-break: break-all;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 0.9rem;
   }
-  .banner strong { color: var(--text); }
+  .threshold-config label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+  }
+  .threshold-config input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.35rem 0.6rem;
+    width: 80px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+  .threshold-config input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .threshold-config .hint {
+    flex-basis: 100%;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
 
   .tabs {
     display: flex;
@@ -314,6 +340,21 @@
     <p>Score applicants using Jev's calibrated decision model.</p>
   </header>
 
+  <div class="threshold-config">
+    <label for="autoAdmitThreshold">
+      Auto-admit:
+      <input id="autoAdmitThreshold" type="number" min="0" max="1" step="0.01" value="0.97" />
+    </label>
+    <label for="autoDenyThreshold">
+      Auto-deny:
+      <input id="autoDenyThreshold" type="number" min="0" max="1" step="0.01" value="0.03" />
+    </label>
+    <p class="hint">
+      Applicants with <code>should_admit</code> ≥ auto-admit are routed to AUTO_ADMIT.
+      Those ≤ auto-deny go to AUTO_DENY. Everything else goes to HUMAN_REVIEW.
+    </p>
+  </div>
+
   <div class="tabs">
     <button class="tab active" data-tab="single">Single applicant</button>
     <button class="tab" data-tab="batch">Batch CSV upload</button>
@@ -440,9 +481,42 @@
 
 <script>
   // -------------------- CONFIG --------------------
-  // Your Apps Script Web App /exec URL — this is the only endpoint the page calls.
+  // Your Apps Script Web App /exec URL.
   const APPS_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycby6hqDQvC66mfurmhLWreAs512vVPoP1mc6q1IjSODOBMfuC9snCUE6b6YmzsMM9p49/exec";
+
+  // -------------------- THRESHOLDS --------------------
+  const admitInput = document.getElementById('autoAdmitThreshold');
+  const denyInput = document.getElementById('autoDenyThreshold');
+
+  // Restore saved thresholds
+  const savedAdmit = localStorage.getItem('jev_admit_threshold');
+  const savedDeny = localStorage.getItem('jev_deny_threshold');
+  if (savedAdmit !== null) admitInput.value = savedAdmit;
+  if (savedDeny !== null) denyInput.value = savedDeny;
+
+  admitInput.addEventListener('change', () => {
+    localStorage.setItem('jev_admit_threshold', admitInput.value);
+  });
+  denyInput.addEventListener('change', () => {
+    localStorage.setItem('jev_deny_threshold', denyInput.value);
+  });
+
+  function getThresholds() {
+    const admit = parseFloat(admitInput.value);
+    const deny = parseFloat(denyInput.value);
+    return {
+      admit: isNaN(admit) ? 0.97 : admit,
+      deny: isNaN(deny) ? 0.03 : deny,
+    };
+  }
+
+  function routeDecision(prob) {
+    const { admit, deny } = getThresholds();
+    if (prob >= admit) return 'AUTO_ADMIT';
+    if (prob <= deny) return 'AUTO_DENY';
+    return 'HUMAN_REVIEW';
+  }
 
   // -------------------- TABS --------------------
   document.querySelectorAll('.tab').forEach((tab) => {
@@ -490,16 +564,9 @@
     };
   }
 
-  function routeDecision(prob) {
-    if (prob >= 0.97) return 'AUTO_ADMIT';
-    if (prob <= 0.03) return 'AUTO_DENY';
-    return 'HUMAN_REVIEW';
-  }
-
   async function callJev(state) {
     const response = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      // text/plain avoids CORS preflight against Apps Script
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         state: state,
