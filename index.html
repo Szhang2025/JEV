@@ -182,6 +182,78 @@
   }
   .file-info.show { display: block; }
 
+  /* CSV help */
+  .csv-help {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+  .csv-help summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.6rem 0.9rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--orange);
+    user-select: none;
+  }
+  .csv-help summary::-webkit-details-marker { display: none; }
+  .csv-help summary::before {
+    content: "▸ ";
+    display: inline-block;
+    transition: transform 0.15s;
+  }
+  .csv-help[open] summary::before { transform: rotate(90deg); }
+  .csv-help summary:hover { background: var(--surface-2); }
+  .csv-help-body {
+    padding: 1rem 0.5rem 0.5rem;
+    font-size: 0.9rem;
+  }
+  .csv-help-body h4 {
+    color: #fff;
+    font-size: 0.95rem;
+    margin: 1rem 0 0.5rem;
+  }
+  .csv-help-body p { margin-bottom: 0.75rem; }
+  .csv-help-body ul, .csv-help-body ol { margin: 0.5rem 0 0.75rem 1.5rem; }
+  .csv-help-body li { margin-bottom: 0.3rem; }
+  .csv-help-body code {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    background: var(--surface-2);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: #e6edf3;
+  }
+  .csv-help-body pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+  .csv-help-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  .csv-help-body .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 0.85rem 1.1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1rem 0;
+    font-size: 0.88rem;
+  }
+  .csv-help-body .callout.warn { border-left-color: var(--orange); }
+  .csv-help-body .callout p:last-child { margin-bottom: 0; }
+
   .result {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -335,7 +407,7 @@
   .summary .stat .num { color: #fff; font-weight: 700; font-family: var(--font-mono); }
   .summary .stat .lbl { color: var(--text-muted); margin-left: 0.4rem; }
 
-  /* Appendix (collapsible) */
+  /* Appendix */
   .appendix {
     margin-top: 3rem;
     border-top: 2px solid var(--border);
@@ -447,7 +519,6 @@
     <p class="hint">
       Applicants with <code>should_admit</code> ≥ auto-admit are routed to AUTO_ADMIT.
       Those ≤ auto-deny go to AUTO_DENY. Everything else goes to HUMAN_REVIEW.
-      Expand the appendix at the bottom for how to read Noul probabilities.
     </p>
   </div>
 
@@ -550,7 +621,7 @@
     <div id="dropZone" class="drop-zone">
       <input id="fileInput" type="file" accept=".csv,text/csv" />
       <p><strong>Click to upload</strong> or drag a CSV file here</p>
-      <p style="font-size:0.8rem;margin-top:0.5rem;">Header row should match the state keys (applicant_id, core_gpa_bucket, …)</p>
+      <p style="font-size:0.8rem;margin-top:0.5rem;">See the guide below for the exact format.</p>
     </div>
 
     <div id="fileInfo" class="file-info"></div>
@@ -572,10 +643,85 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- CSV HOW-TO -->
+    <!-- ============================================================ -->
+    <details class="csv-help">
+      <summary>How to create the batch CSV file</summary>
+      <div class="csv-help-body">
+
+        <p>
+          The batch CSV is a plain spreadsheet-style file with a <strong>header row</strong> followed
+          by <strong>one row per applicant</strong>. The page reads it in the browser, turns each row
+          into a Jev <code>state</code>, and sends one request per row.
+        </p>
+
+        <h4>Step 1 — Open a spreadsheet</h4>
+        <p>Use Excel, Google Sheets, or any editor that can export CSV.</p>
+
+        <h4>Step 2 — Create the header row</h4>
+        <p>
+          Put these column names in the first row, exactly as written. Each column maps to a field
+          in the Jev <code>state</code> object:
+        </p>
+        <pre><code>applicant_id,core_gpa_bucket,course_rigor,test_scores_submitted,test_score_percentile_bucket,class_rank_bucket,high_school_profile,opportunities_available,first_generation,geographic_diversity_flag,legacy_status,activities_summary,essay_theme,recommendation_highlight,awards_honors,institutional_notes</code></pre>
+
+        <h4>Step 3 — Add one row per applicant</h4>
+        <p>
+          Fill in the fields. Numeric values must be converted to <strong>buckets</strong> before
+          they go in the CSV — Jev cannot do arithmetic. For example, a GPA of 3.9 becomes
+          <code>top_10_percent</code>, and a SAT score of 1450 becomes <code>95th_plus</code>.
+        </p>
+
+        <h4>Step 4 — Save as CSV (UTF-8)</h4>
+        <ul>
+          <li><strong>Excel:</strong> File → Save As → CSV UTF-8 (Comma delimited) (*.csv)</li>
+          <li><strong>Google Sheets:</strong> File → Download → Comma-separated values (.csv)</li>
+        </ul>
+
+        <h4>Example file</h4>
+        <pre><code>applicant_id,core_gpa_bucket,course_rigor,test_scores_submitted,test_score_percentile_bucket,class_rank_bucket,high_school_profile,opportunities_available,first_generation,geographic_diversity_flag,legacy_status,activities_summary,essay_theme,recommendation_highlight,awards_honors,institutional_notes
+APP-2027-00001,top_10_percent,most_demanding_available,true,95th_plus,top_5_percent,under_resourced,limited_advanced_courses,true,false,false,"Founder of coding club, 3 years","Resilience after family hardship","Teacher notes maturity","Regional science fair winner","Values resilience"
+APP-2027-00002,top_25_percent,demanding,true,90th_plus,top_10_percent,well_resourced,extensive,false,false,true,"Debate team captain","Public policy interest","Counselor highlights leadership","State debate champion","Legacy applicant"
+APP-2027-00003,top_50_percent,average,false,not_submitted,top_25_percent,average,moderate,false,false,false,"Part-time job; volunteer tutoring","Balancing work and school","Strong work ethic","None listed","First in family"</code></pre>
+
+        <h4>Rules to follow</h4>
+        <ul>
+          <li><strong>Quote any field that contains a comma.</strong> Wrap it in double quotes: <code>"Founder of coding club, 3 years"</code>.</li>
+          <li><strong>Use lowercase for booleans</strong> — <code>true</code> / <code>false</code>, not TRUE/FALSE.</li>
+          <li><strong>Keep values consistent.</strong> Jev reads labels literally; <code>top_10_percent</code> and <code>Top 10%</code> are different.</li>
+          <li><strong>No empty header cells.</strong> Every column needs a name in row 1.</li>
+          <li><strong>One header row only.</strong> Don't add titles or blank rows above it.</li>
+        </ul>
+
+        <h4>Optional — nested headers with dots</h4>
+        <p>
+          If you prefer, you can use dotted column names to mirror the nested structure of the
+          single-applicant form. The page converts them automatically:
+        </p>
+        <pre><code>applicant_id,academic_profile.core_gpa_bucket,academic_profile.course_rigor,qualitative.activities_summary</code></pre>
+        <p>Both flat and dotted headers work. Pick whichever is easier for your data source.</p>
+
+        <div class="callout">
+          <p><strong>What you get back:</strong> The page adds four columns to your data —
+          <code>jev_should_admit</code>, <code>jev_academic_readiness</code>,
+          <code>jev_recommended_track</code>, and <code>jev_routing</code> — and lets you
+          download the combined result as a new CSV.</p>
+        </div>
+
+        <div class="callout warn">
+          <p><strong>Watch out for:</strong> very large batches. The page sends one request per row,
+          so 500 applicants means 500 calls. The default threshold values apply to every row in the
+          batch — set them before clicking <em>Score all applicants</em>.</p>
+        </div>
+
+      </div>
+    </details>
   </div>
 
   <!-- ============================================================ -->
-  <!-- APPENDIX (collapsible) -->
+  <!-- APPENDIX -->
   <!-- ============================================================ -->
   <details class="appendix">
     <summary>
@@ -640,29 +786,12 @@
 
       <h3>Worked examples</h3>
 
-      <p>These are the kinds of values you'll actually see in the results table:</p>
-
       <ul>
-        <li>
-          <code>0.96</code> → "Very likely should admit." 96% probability yes,
-          4% probability no. Strong enough to consider auto-admit.
-        </li>
-        <li>
-          <code>0.78</code> → "Leaning yes, but not certain." 78% probability yes,
-          22% probability no. The 22% is too large to skip human review.
-        </li>
-        <li>
-          <code>0.50</code> → "Coin flip." The model has no usable signal. Whatever
-          you decide, a human should be the one deciding.
-        </li>
-        <li>
-          <code>0.22</code> → "Leaning no." 22% probability yes, 78% probability no.
-          Still not confident enough for auto-deny under a conservative threshold.
-        </li>
-        <li>
-          <code>0.05</code> → "Very likely should not admit." 5% probability yes,
-          95% probability no. Strong enough to consider auto-deny.
-        </li>
+        <li><code>0.96</code> → "Very likely should admit." 96% yes, 4% no.</li>
+        <li><code>0.78</code> → "Leaning yes, but not certain." 78% yes, 22% no.</li>
+        <li><code>0.50</code> → "Coin flip." No usable signal.</li>
+        <li><code>0.22</code> → "Leaning no." 22% yes, 78% no.</li>
+        <li><code>0.05</code> → "Very likely should not admit." 5% yes, 95% no.</li>
       </ul>
 
       <div class="callout warn">
@@ -672,12 +801,6 @@
       </div>
 
       <h3>How this differs from Choice confidence</h3>
-
-      <p>
-        A <strong>Choice</strong> question (like <code>recommended_track</code>) returns a
-        distribution plus a separate confidence value. A <strong>Noul</strong> returns only a
-        probability, because with two options the probability <em>is</em> the full answer.
-      </p>
 
       <pre><code>Noul  → {"noul": 0.78}
         One number. 78% yes, 22% no.
@@ -696,17 +819,14 @@ Choice → {"choice": "admit",
       </p>
 
       <ul>
-        <li>Default <code>0.97 / 0.03</code> → only near-certain cases auto-decide.
-          Everything else goes to human review.</li>
+        <li>Default <code>0.97 / 0.03</code> → only near-certain cases auto-decide.</li>
         <li>Looser <code>0.90 / 0.10</code> → more automation, but a 10% error rate on auto-decisions.</li>
-        <li>Tighter <code>0.99 / 0.01</code> → almost nothing auto-decides. Maximum caution.</li>
+        <li>Tighter <code>0.99 / 0.01</code> → almost nothing auto-decides.</li>
       </ul>
 
       <p>
         For a decision as consequential as admissions, keep the auto bands narrow and let the
-        middle range go to a human. The <code>0.78</code> you saw earlier is a textbook
-        "lean yes, but review" case — and routing it to <code>HUMAN_REVIEW</code> is the correct
-        response.
+        middle range go to a human.
       </p>
     </div>
   </details>
@@ -754,7 +874,6 @@ Choice → {"choice": "admit",
     return 'HUMAN_REVIEW';
   }
 
-  // Bands for reading a Noul probability
   function noulBand(prob) {
     if (prob >= 0.90) return { label: 'confident yes', cls: 'confident-yes' };
     if (prob <= 0.10) return { label: 'confident no', cls: 'confident-no' };
