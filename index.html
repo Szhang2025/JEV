@@ -6,17 +6,23 @@
 <title>Applicant Scorer — Jev Demo</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface-2: #1c2128;
-    --border: #30363d;
-    --text: #c9d1d9;
-    --text-muted: #8b949e;
-    --accent: #58a6ff;
-    --accent-dim: #1f6feb;
-    --green: #3fb950;
-    --orange: #d29922;
-    --red: #f85149;
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface-2: #f0f3f6;
+    --border: #d0d7de;
+    --border-strong: #b0b8c0;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --accent: #0969da;
+    --accent-dim: #0550ae;
+    --accent-soft: #ddf4ff;
+    --green: #1a7f37;
+    --green-soft: #dafbe1;
+    --orange: #9a6700;
+    --orange-soft: #fff8c5;
+    --red: #cf222e;
+    --red-soft: #ffebe9;
+    --code-bg: #f6f8fa;
     --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +41,7 @@
     border-bottom: 1px solid var(--border);
     margin-bottom: 1.5rem;
   }
-  header h1 { font-size: 1.8rem; color: #fff; letter-spacing: -0.02em; }
+  header h1 { font-size: 1.8rem; color: var(--text); letter-spacing: -0.02em; }
   header p { color: var(--text-muted); margin-top: 0.5rem; font-size: 0.95rem; }
 
   .threshold-config {
@@ -49,6 +55,7 @@
     flex-wrap: wrap;
     align-items: center;
     font-size: 0.9rem;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
   }
   .threshold-config label {
     display: flex;
@@ -57,8 +64,8 @@
     color: var(--text-muted);
   }
   .threshold-config input {
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     color: var(--text);
     padding: 0.35rem 0.6rem;
@@ -69,6 +76,7 @@
   .threshold-config input:focus {
     outline: none;
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
   }
   .threshold-config .hint {
     flex-basis: 100%;
@@ -118,7 +126,7 @@
   }
   .field input, .field textarea, .field select {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     color: var(--text);
     padding: 0.5rem 0.7rem;
@@ -129,6 +137,7 @@
   .field input:focus, .field textarea:focus, .field select:focus {
     outline: none;
     border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
   }
 
   .actions { display: flex; gap: 0.75rem; margin: 1.25rem 0; flex-wrap: wrap; }
@@ -146,14 +155,14 @@
   button:hover { background: var(--accent); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   button.secondary {
-    background: transparent;
-    border: 1px solid var(--border);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
     color: var(--text);
   }
-  button.secondary:hover { background: var(--surface); }
+  button.secondary:hover { background: var(--surface-2); }
 
   .drop-zone {
-    border: 2px dashed var(--border);
+    border: 2px dashed var(--border-strong);
     border-radius: 8px;
     padding: 2rem 1rem;
     text-align: center;
@@ -161,10 +170,11 @@
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
     margin-bottom: 1rem;
+    background: var(--surface);
   }
   .drop-zone:hover, .drop-zone.dragover {
     border-color: var(--accent);
-    background: rgba(88, 166, 255, 0.05);
+    background: var(--accent-soft);
   }
   .drop-zone strong { color: var(--text); }
   .drop-zone input { display: none; }
@@ -199,6 +209,7 @@
     font-weight: 600;
     color: var(--orange);
     user-select: none;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
   }
   .csv-help summary::-webkit-details-marker { display: none; }
   .csv-help summary::before {
@@ -213,7 +224,7 @@
     font-size: 0.9rem;
   }
   .csv-help-body h4 {
-    color: #fff;
+    color: var(--text);
     font-size: 0.95rem;
     margin: 1rem 0 0.5rem;
   }
@@ -223,13 +234,14 @@
   .csv-help-body code {
     font-family: var(--font-mono);
     font-size: 0.82em;
-    background: var(--surface-2);
+    background: var(--code-bg);
     padding: 0.15em 0.4em;
     border-radius: 4px;
-    color: #e6edf3;
+    color: var(--text);
+    border: 1px solid var(--border);
   }
   .csv-help-body pre {
-    background: var(--surface-2);
+    background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 0.9rem;
@@ -242,16 +254,20 @@
     background: none;
     padding: 0;
     font-size: inherit;
+    border: none;
   }
   .csv-help-body .callout {
-    background: var(--surface);
+    background: var(--accent-soft);
     border-left: 3px solid var(--accent);
     padding: 0.85rem 1.1rem;
     border-radius: 0 8px 8px 0;
     margin: 1rem 0;
     font-size: 0.88rem;
   }
-  .csv-help-body .callout.warn { border-left-color: var(--orange); }
+  .csv-help-body .callout.warn {
+    background: var(--orange-soft);
+    border-left-color: var(--orange);
+  }
   .csv-help-body .callout p:last-child { margin-bottom: 0; }
 
   .result {
@@ -260,10 +276,11 @@
     border-radius: 8px;
     padding: 1.25rem;
     margin-top: 1rem;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
   }
   .result h2 {
     font-size: 1.1rem;
-    color: #fff;
+    color: var(--text);
     margin-bottom: 0.75rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border);
@@ -277,7 +294,7 @@
   }
   .result .row:last-child { border-bottom: none; }
   .result .row .label { color: var(--text-muted); }
-  .result .row .value { font-family: var(--font-mono); color: #fff; }
+  .result .row .value { font-family: var(--font-mono); color: var(--text); font-weight: 600; }
 
   .band {
     display: inline-block;
@@ -289,9 +306,9 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .band.confident-yes { background: #1f3a1f; color: var(--green); }
-  .band.uncertain { background: #3a2d1f; color: var(--orange); }
-  .band.confident-no { background: #3a1f1f; color: var(--red); }
+  .band.confident-yes { background: var(--green-soft); color: var(--green); }
+  .band.uncertain { background: var(--orange-soft); color: var(--orange); }
+  .band.confident-no { background: var(--red-soft); color: var(--red); }
 
   .routing {
     display: inline-block;
@@ -301,9 +318,9 @@
     font-weight: 700;
     text-transform: uppercase;
   }
-  .routing.auto-admit { background: #1f3a1f; color: var(--green); }
-  .routing.auto-deny { background: #3a1f1f; color: var(--red); }
-  .routing.human-review { background: #3a2d1f; color: var(--orange); }
+  .routing.auto-admit { background: var(--green-soft); color: var(--green); }
+  .routing.auto-deny { background: var(--red-soft); color: var(--red); }
+  .routing.human-review { background: var(--orange-soft); color: var(--orange); }
 
   .probs { margin-top: 0.75rem; }
   .probs .bar-row {
@@ -317,7 +334,7 @@
   .probs .bar-track {
     flex: 1;
     height: 8px;
-    background: var(--bg);
+    background: var(--surface-2);
     border-radius: 4px;
     overflow: hidden;
   }
@@ -339,13 +356,14 @@
     margin-top: 1rem;
     font-size: 0.9rem;
     display: none;
+    border: 1px solid transparent;
   }
-  .status.error { background: #3a1f1f; color: var(--red); display: block; }
-  .status.success { background: #1f3a1f; color: var(--green); display: block; }
-  .status.loading { background: var(--surface-2); color: var(--text-muted); display: block; }
+  .status.error { background: var(--red-soft); color: var(--red); border-color: var(--red); display: block; }
+  .status.success { background: var(--green-soft); color: var(--green); border-color: var(--green); display: block; }
+  .status.loading { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); display: block; }
 
   .progress {
-    background: var(--bg);
+    background: var(--surface-2);
     border-radius: 4px;
     height: 6px;
     overflow: hidden;
@@ -366,6 +384,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     display: none;
+    background: var(--surface);
   }
   .table-wrap.show { display: block; }
   table {
@@ -375,10 +394,10 @@
   }
   th {
     background: var(--surface-2);
-    color: #fff;
+    color: var(--text);
     text-align: left;
     padding: 0.6rem 0.75rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--border-strong);
     font-weight: 600;
     white-space: nowrap;
   }
@@ -388,7 +407,7 @@
     font-family: var(--font-mono);
     white-space: nowrap;
   }
-  tr:hover td { background: rgba(88, 166, 255, 0.04); }
+  tr:hover td { background: var(--surface-2); }
 
   .summary {
     display: none;
@@ -403,8 +422,9 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 0.5rem 0.9rem;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
   }
-  .summary .stat .num { color: #fff; font-weight: 700; font-family: var(--font-mono); }
+  .summary .stat .num { color: var(--text); font-weight: 700; font-family: var(--font-mono); }
   .summary .stat .lbl { color: var(--text-muted); margin-left: 0.4rem; }
 
   /* Appendix */
@@ -425,9 +445,10 @@
     border-radius: 8px;
     font-size: 1.05rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text);
     user-select: none;
     transition: background 0.15s, border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.04);
   }
   .appendix summary::-webkit-details-marker { display: none; }
   .appendix summary:hover {
@@ -458,13 +479,14 @@
   .appendix-body code {
     font-family: var(--font-mono);
     font-size: 0.85em;
-    background: var(--surface-2);
+    background: var(--code-bg);
     padding: 0.15em 0.4em;
     border-radius: 4px;
-    color: #e6edf3;
+    color: var(--text);
+    border: 1px solid var(--border);
   }
   .appendix-body pre {
-    background: var(--surface-2);
+    background: var(--code-bg);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1rem;
@@ -477,15 +499,19 @@
     background: none;
     padding: 0;
     font-size: inherit;
+    border: none;
   }
   .appendix-body .callout {
-    background: var(--surface);
+    background: var(--accent-soft);
     border-left: 3px solid var(--accent);
     padding: 1rem 1.25rem;
     border-radius: 0 8px 8px 0;
     margin: 1.25rem 0;
   }
-  .appendix-body .callout.warn { border-left-color: var(--orange); }
+  .appendix-body .callout.warn {
+    background: var(--orange-soft);
+    border-left-color: var(--orange);
+  }
   .appendix-body .callout p:last-child { margin-bottom: 0; }
 
   footer {
@@ -497,6 +523,7 @@
     font-size: 0.8rem;
   }
   footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -644,9 +671,6 @@
       </table>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- CSV HOW-TO -->
-    <!-- ============================================================ -->
     <details class="csv-help">
       <summary>How to create the batch CSV file</summary>
       <div class="csv-help-body">
@@ -720,9 +744,6 @@ APP-2027-00003,top_50_percent,average,false,not_submitted,top_25_percent,average
     </details>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- APPENDIX -->
-  <!-- ============================================================ -->
   <details class="appendix">
     <summary>
       <span class="summary-label">Appendix — Interpreting Noul probabilities</span>
