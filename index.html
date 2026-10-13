@@ -207,6 +207,20 @@
   .result .row .label { color: var(--text-muted); }
   .result .row .value { font-family: var(--font-mono); color: #fff; }
 
+  .band {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .band.confident-yes { background: #1f3a1f; color: var(--green); }
+  .band.uncertain { background: #3a2d1f; color: var(--orange); }
+  .band.confident-no { background: #3a1f1f; color: var(--red); }
+
   .routing {
     display: inline-block;
     padding: 0.2rem 0.6rem;
@@ -321,6 +335,87 @@
   .summary .stat .num { color: #fff; font-weight: 700; font-family: var(--font-mono); }
   .summary .stat .lbl { color: var(--text-muted); margin-left: 0.4rem; }
 
+  /* Appendix (collapsible) */
+  .appendix {
+    margin-top: 3rem;
+    border-top: 2px solid var(--border);
+    padding-top: 1.5rem;
+  }
+  .appendix summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #fff;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .appendix summary::-webkit-details-marker { display: none; }
+  .appendix summary:hover {
+    background: var(--surface-2);
+    border-color: var(--accent);
+  }
+  .appendix summary .summary-toggle::after {
+    content: "▸";
+    display: inline-block;
+    margin-left: 0.5rem;
+    color: var(--accent);
+    transition: transform 0.15s;
+  }
+  .appendix[open] summary .summary-toggle::after {
+    transform: rotate(90deg);
+  }
+  .appendix-body {
+    padding: 1.5rem 1rem 0;
+  }
+  .appendix-body h3 {
+    font-size: 1.05rem;
+    color: var(--accent);
+    margin: 1.5rem 0 0.75rem;
+  }
+  .appendix-body p { margin-bottom: 1rem; }
+  .appendix-body ul, .appendix-body ol { margin: 0.5rem 0 1rem 1.5rem; }
+  .appendix-body li { margin-bottom: 0.35rem; }
+  .appendix-body code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--surface-2);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    color: #e6edf3;
+  }
+  .appendix-body pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+  .appendix-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  .appendix-body .callout {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.25rem 0;
+  }
+  .appendix-body .callout.warn { border-left-color: var(--orange); }
+  .appendix-body .callout p:last-child { margin-bottom: 0; }
+
   footer {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
@@ -352,6 +447,7 @@
     <p class="hint">
       Applicants with <code>should_admit</code> ≥ auto-admit are routed to AUTO_ADMIT.
       Those ≤ auto-deny go to AUTO_DENY. Everything else goes to HUMAN_REVIEW.
+      Expand the appendix at the bottom for how to read Noul probabilities.
     </p>
   </div>
 
@@ -433,7 +529,12 @@
 
     <div id="result" class="result" style="display:none;">
       <h2>Result</h2>
-      <div class="row"><span class="label">should_admit</span><span class="value" id="r-prob">—</span></div>
+      <div class="row">
+        <span class="label">should_admit</span>
+        <span class="value">
+          <span id="r-prob">—</span><span id="r-band"></span>
+        </span>
+      </div>
       <div class="row"><span class="label">academic_readiness</span><span class="value" id="r-academic">—</span></div>
       <div class="row"><span class="label">recommended_track</span><span class="value" id="r-track">—</span></div>
       <div class="row"><span class="label">routing</span><span class="value"><span id="r-routing" class="routing">—</span></span></div>
@@ -473,6 +574,143 @@
     </div>
   </div>
 
+  <!-- ============================================================ -->
+  <!-- APPENDIX (collapsible) -->
+  <!-- ============================================================ -->
+  <details class="appendix">
+    <summary>
+      <span class="summary-label">Appendix — Interpreting Noul probabilities</span>
+      <span class="summary-toggle"></span>
+    </summary>
+
+    <div class="appendix-body">
+      <p>
+        The <code>should_admit</code> value in every result is a <strong>Noul</strong> — Jev's name for
+        a yes/no question. It returns a single probability between <code>0</code> and <code>1</code>
+        that the answer is "yes." The number <em>is</em> the answer: there is no separate
+        confidence field for a Noul.
+      </p>
+
+      <div class="callout">
+        <p><strong>Short version:</strong> The closer to <code>0</code> or <code>1</code>, the more
+        certain the model is. The closer to <code>0.5</code>, the more uncertain. Certainty lives at
+        <em>both ends</em> of the range.</p>
+      </div>
+
+      <h3>Band reference</h3>
+
+      <p>Use these bands as a quick guide when reading a Noul probability:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Range</th>
+            <th>Interpretation</th>
+            <th>Suggested action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>≥ 0.90</code></td>
+            <td>Confident <strong>yes</strong></td>
+            <td>Safe to automate as "yes" if your thresholds allow it</td>
+          </tr>
+          <tr>
+            <td><code>0.70 – 0.90</code></td>
+            <td>Leaning yes, but not certain</td>
+            <td>Route to human review</td>
+          </tr>
+          <tr>
+            <td><code>0.30 – 0.70</code></td>
+            <td>Genuinely uncertain</td>
+            <td>Always route to human review</td>
+          </tr>
+          <tr>
+            <td><code>0.10 – 0.30</code></td>
+            <td>Leaning no, but not certain</td>
+            <td>Route to human review</td>
+          </tr>
+          <tr>
+            <td><code>≤ 0.10</code></td>
+            <td>Confident <strong>no</strong></td>
+            <td>Safe to automate as "no" if your thresholds allow it</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Worked examples</h3>
+
+      <p>These are the kinds of values you'll actually see in the results table:</p>
+
+      <ul>
+        <li>
+          <code>0.96</code> → "Very likely should admit." 96% probability yes,
+          4% probability no. Strong enough to consider auto-admit.
+        </li>
+        <li>
+          <code>0.78</code> → "Leaning yes, but not certain." 78% probability yes,
+          22% probability no. The 22% is too large to skip human review.
+        </li>
+        <li>
+          <code>0.50</code> → "Coin flip." The model has no usable signal. Whatever
+          you decide, a human should be the one deciding.
+        </li>
+        <li>
+          <code>0.22</code> → "Leaning no." 22% probability yes, 78% probability no.
+          Still not confident enough for auto-deny under a conservative threshold.
+        </li>
+        <li>
+          <code>0.05</code> → "Very likely should not admit." 5% probability yes,
+          95% probability no. Strong enough to consider auto-deny.
+        </li>
+      </ul>
+
+      <div class="callout warn">
+        <p><strong>Common mistake:</strong> Using a one-sided threshold like "act only above 0.9"
+        on a Noul. That treats a confident <em>no</em> (<code>0.05</code>) as uncertain, which is wrong.
+        For a Noul, "confident" means <em>far from 0.5</em> in either direction.</p>
+      </div>
+
+      <h3>How this differs from Choice confidence</h3>
+
+      <p>
+        A <strong>Choice</strong> question (like <code>recommended_track</code>) returns a
+        distribution plus a separate confidence value. A <strong>Noul</strong> returns only a
+        probability, because with two options the probability <em>is</em> the full answer.
+      </p>
+
+      <pre><code>Noul  → {"noul": 0.78}
+        One number. 78% yes, 22% no.
+
+Choice → {"choice": "admit",
+          "probabilities": {"admit": 0.87, "waitlist": 0.13, "deny": 0.00},
+          "confidence": 0.87}
+        The winning label, the full distribution, and how concentrated it is.</code></pre>
+
+      <h3>How your routing thresholds map to the bands</h3>
+
+      <p>
+        The two threshold inputs at the top of the page control the routing decision. They are
+        <em>not</em> the same as the interpretation bands above. The thresholds say when to
+        <strong>act automatically</strong>; the bands say how to <strong>read the probability</strong>.
+      </p>
+
+      <ul>
+        <li>Default <code>0.97 / 0.03</code> → only near-certain cases auto-decide.
+          Everything else goes to human review.</li>
+        <li>Looser <code>0.90 / 0.10</code> → more automation, but a 10% error rate on auto-decisions.</li>
+        <li>Tighter <code>0.99 / 0.01</code> → almost nothing auto-decides. Maximum caution.</li>
+      </ul>
+
+      <p>
+        For a decision as consequential as admissions, keep the auto bands narrow and let the
+        middle range go to a human. The <code>0.78</code> you saw earlier is a textbook
+        "lean yes, but review" case — and routing it to <code>HUMAN_REVIEW</code> is the correct
+        response.
+      </p>
+    </div>
+  </details>
+
   <footer>
     <p>Powered by <a href="https://typesafe.ai" target="_blank" rel="noopener">Jev</a> via Google Apps Script.</p>
   </footer>
@@ -481,7 +719,6 @@
 
 <script>
   // -------------------- CONFIG --------------------
-  // Your Apps Script Web App /exec URL.
   const APPS_SCRIPT_URL =
     "https://script.google.com/macros/s/AKfycby6hqDQvC66mfurmhLWreAs512vVPoP1mc6q1IjSODOBMfuC9snCUE6b6YmzsMM9p49/exec";
 
@@ -489,7 +726,6 @@
   const admitInput = document.getElementById('autoAdmitThreshold');
   const denyInput = document.getElementById('autoDenyThreshold');
 
-  // Restore saved thresholds
   const savedAdmit = localStorage.getItem('jev_admit_threshold');
   const savedDeny = localStorage.getItem('jev_deny_threshold');
   if (savedAdmit !== null) admitInput.value = savedAdmit;
@@ -516,6 +752,13 @@
     if (prob >= admit) return 'AUTO_ADMIT';
     if (prob <= deny) return 'AUTO_DENY';
     return 'HUMAN_REVIEW';
+  }
+
+  // Bands for reading a Noul probability
+  function noulBand(prob) {
+    if (prob >= 0.90) return { label: 'confident yes', cls: 'confident-yes' };
+    if (prob <= 0.10) return { label: 'confident no', cls: 'confident-no' };
+    return { label: 'uncertain', cls: 'uncertain' };
   }
 
   // -------------------- TABS --------------------
@@ -625,8 +868,13 @@
     const track = answers.recommended_track?.choice ?? '—';
     const trackProbs = answers.recommended_track?.probabilities ?? {};
     const routing = routeDecision(prob);
+    const band = noulBand(prob);
 
     document.getElementById('r-prob').textContent = prob.toFixed(2);
+    const bandEl = document.getElementById('r-band');
+    bandEl.textContent = band.label;
+    bandEl.className = 'band ' + band.cls;
+
     document.getElementById('r-academic').textContent = academic.toFixed(2);
     document.getElementById('r-track').textContent = track;
 
